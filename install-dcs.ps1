@@ -22,8 +22,7 @@ $ServerPath = "$ServerFolder\bin\DCS_server.exe"
 $MissionScriptPath = "$ServerFolder\Scripts\MissionScripting.lua"
 
 # User prompts
-Write-Host "Fresh system install?" -ForegroundColor Yellow
-Write-Host "(Will install 7-zip, notepad++, and dotnet)" -ForegroundColor Yellow
+Write-Host "Open WinUtil to install 7-zip, notepad++, and dotnet?" -ForegroundColor Yellow
 $fresh = Read-Host "[Y/N]"
 
 Write-Host "Add exclusion to Windows Defender for '$MainPath'?" -ForegroundColor Yellow
@@ -222,8 +221,11 @@ try {
 
         Start-Sleep -Seconds 3
 
-        Write-Log "Killing DCS process."
-        Stop-Process -Name "DCS_server" -Force
+        $dcs = Get-Process -Name "DCS_server" -ErrorAction SilentlyContinue
+        if ($dcs) {
+            Write-Log "Killing DCS process."
+            Stop-Process -Name "DCS_server" -Force
+        }
 
         if ((Test-Path $ServerPath) -and (Test-Path $UpdaterPath) -and (Test-Path $MissionScriptPath)) {
             Write-Log "DCS Server installed successfully."
@@ -254,6 +256,15 @@ try {
             Write-Log "MissionScripting.lua modified."
         }
     }
+
+    # Clean up
+    Write-Log "Cleaning up..."
+    Remove-Item -Path $InstallerPath -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "$MainPath\WinUtil.json" -Force -ErrorAction SilentlyContinue
+
+    Write-Log "Installation script completed successfully, running DCS_updater for login."
+    Start-Process $UpdaterPath -Wait -ErrorAction Stop
+
 } catch {
     Write-Log "An error occurred: $_" -Level "ERROR"
 }
