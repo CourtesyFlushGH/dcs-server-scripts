@@ -63,7 +63,6 @@ $winUtil = @"
                        "WPFInstalldotnet8",
                        "WPFInstall7zip",
                        "WPFInstalldotnet9",
-                       "WPFInstallbrave",
                        "WPFInstallnotepadplus"
                    ],
     "WPFFeature":  [
