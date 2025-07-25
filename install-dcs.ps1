@@ -13,9 +13,6 @@ $DCSuri = "https://www.digitalcombatsimulator.com/en/downloads/world/server/"
 $DCSsite = "https://www.digitalcombatsimulator.com"
 $DCSinstaller = ".*/DCS_World_Server_modular.exe"
 
-# Install-DotNET
-$dotnetInstallURL = "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.17/windowsdesktop-runtime-8.0.17-win-x64.exe"
-
 # Install-DCSServer
 $ServerFolder = "$MainPath\DCS World Server"
 $UpdaterPath = "$ServerFolder\bin\DCS_updater.exe"
@@ -25,6 +22,10 @@ $ServerPath = "$ServerFolder\bin\DCS_server.exe"
 $MissionScriptPath = "$ServerFolder\Scripts\MissionScripting.lua"
 
 # User prompts
+Write-Host "Fresh system install?" -ForegroundColor Yellow
+Write-Host "(Will install 7-zip, notepad++, brave-browser, and dotnet)" -ForegroundColor Yellow
+$fresh = Read-Host "[Y/N]"
+
 Write-Host "Add exclusion to Windows Defender for '$MainPath'?" -ForegroundColor Yellow
 Write-Host "(Defender sometimes sees DCS_updater as a threat)" -ForegroundColor Yellow
 $exclusion = Read-Host "[Y/N]"
@@ -34,6 +35,46 @@ $firewall = Read-Host "[Y/N]"
 
 Write-Host "Modify MissionScripting.lua to be compatible with dynamic campaigns?" -ForegroundColor Yellow
 $dynamic = Read-Host "[Y/N]"
+
+$winUtil = @"
+{
+    "WPFTweaks":  [
+
+                  ],
+    "Install":  [
+                    {
+                        "winget":  "Microsoft.DotNet.DesktopRuntime.8",
+                        "choco":  "dotnet-8.0-runtime"
+                    },
+                    {
+                        "winget":  "7zip.7zip",
+                        "choco":  "7zip"
+                    },
+                    {
+                        "winget":  "Microsoft.DotNet.DesktopRuntime.9",
+                        "choco":  "dotnet-9.0-runtime"
+                    },
+                    {
+                        "winget":  "Brave.Brave",
+                        "choco":  "brave"
+                    },
+                    {
+                        "winget":  "Notepad++.Notepad++",
+                        "choco":  "notepadplusplus"
+                    }
+                ],
+    "WPFInstall":  [
+                       "WPFInstalldotnet8",
+                       "WPFInstall7zip",
+                       "WPFInstalldotnet9",
+                       "WPFInstallbrave",
+                       "WPFInstallnotepadplus"
+                   ],
+    "WPFFeature":  [
+
+                   ]
+}
+"@
 
 $MissionScriptContent = @"
 --Initialization script for the Mission lua Environment (SSE)
@@ -100,139 +141,126 @@ function Set-ClipboardWithRetry {
 }
 
 
-# Install DotNET
+try {
+    # Test main folder path
 
-$dotnet = Test-Path "C:\Program Files\dotnet\dotnet.exe"
-if ($dotnet) {
-    Write-Log ".NET already installed."
-}
-else {
-    Write-Log "Installing .NET dependency..."
-    $TempPath = "$env:TEMP\dotnet-install.exe"
-    Invoke-WebRequest -Uri $dotnetInstallURL -OutFile $TempPath -ErrorAction Stop
-    Start-Process -FilePath $TempPath -ArgumentList "-c" -Wait -NoNewWindow -ErrorAction Stop
-    Remove-Item -Path $TempPath -Force
-    
-    Write-Log ".NET installation complete."
-}
-
-
-# Test main folder path
-
-if (Test-Path $MainPath) {
-    Write-Log "Found main folder."
-}
-else {
-    Write-Log "Creating main folder."
-    New-Item -Path $MainPath -ItemType Directory -Force
-}
-
-
-# Set exclusion in Windows Defender
-
-if ($exclusion -eq "Y" -or $exclusion -eq "y") {
-
-    $excluded = Get-MpPreference | Select-Object -ExpandProperty ExclusionPath | Where-Object { $_ -eq $MainPath }
-    if (-not $excluded) {
-        Write-Log "Adding $MainPath to Windows Defender exclusions."
-        Add-MpPreference -ExclusionPath $MainPath -ErrorAction Stop
-    } else {
-        Write-Log "$MainPath is already in Windows Defender exclusions."
-    }
-
-}
-
-
-# Download DCS Server installer
-
-if (Test-Path $InstallerPath) {
-    Write-Log "DCS Server installer found at $InstallerPath."
-}
-elseif (Test-Path $UpdaterPath) {
-    Write-Log "DCS_updater found at $UpdaterPath."
-}
-else {
-    $scrape = (Invoke-WebRequest -Uri $DCSuri -UseBasicParsing -ErrorAction Stop).Links.Href | Get-Unique
-    $allmatches = ($scrape | Select-String $DCSinstaller -AllMatches).Matches
-    
-    foreach ($link in $allmatches) {
-        if ($link.Value -match $DCSinstaller) {
-            $downloader = $link.Value
-        }
-    }
-    Invoke-WebRequest -Uri $DCSsite$downloader -OutFile $InstallerPath -UseBasicParsing -ErrorAction Stop
-    if (Test-Path $InstallerPath) {
-        Write-Log "DCS Server installer successfully downloaded."
+    if (Test-Path $MainPath) {
+        Write-Log "Found main folder."
     }
     else {
-        Write-Log "DCS Server installer download failed."
-        exit
-    }
-}
-
-
-# Install DCS server
-
-if ((Test-Path $UpdaterPath) -and (Test-Path $ServerPath)) {
-    Write-Log "Server already installed."
-}
-elseif ((Test-Path $UpdaterPath) -and (-not(Test-Path $ServerPath))) {
-    Write-Log "Launching DCS_updater..."
-    Start-Process $UpdaterPath -Wait -ErrorAction Stop
-}
-else {
-    Set-ClipboardWithRetry "$ServerFolder"
-
-    Write-Host "COPIED INSTALLATION PATH TO CLIPBOARD" -ForegroundColor Yellow
-    Write-Host "PASTE IT INTO THE INSTALLER WHEN NEEDED" -ForegroundColor Yellow
-    Write-Host "Copied '$ServerFolder'" -ForegroundColor White
-    Start-Sleep -Seconds 1
-
-    Write-Log "Starting DCS Server installer."
-    Start-Process $InstallerPath -Wait -ErrorAction Stop
-    Start-Sleep -Seconds 3
-
-    $dcs = Get-Process -Name "DCS_updater"
-    if (-not($dcs)) {
-        $dcs = Start-Process $UpdaterPath -Wait -ErrorAction Stop
-    } else {
-        Write-Log "DCS_updater is running."
-        Write-Log "Waiting for updater to finish..."
-        while ($dcs) {Start-Sleep -Milliseconds 500}
+        Write-Log "Creating main folder at $MainPath."
+        New-Item -Path $MainPath -ItemType Directory -Force -ErrorAction Stop
     }
 
-    Start-Sleep -Seconds 3
-    Write-Log "Killing DCS process."
-    Stop-Process -Name "DCS_server" -Force
 
-    if ((Test-Path $ServerPath) -and (Test-Path $UpdaterPath) -and (Test-Path $MissionScriptPath)) {
-        Write-Log "DCS Server installed successfully."
-    } else {
-        Write-Log "DCS not installed, terminating script." -Level "ERROR"
-        return
+    # Fresh system install
+    if ($fresh -eq "Y" -or $fresh -eq "y") {
+        Write-Log "Performing fresh system install."
+        New-Item -Path $MainPath\WinUtil.json -ItemType File -Force -Value $winUtil -ErrorAction Stop
+
+        Invoke-Expression "& { $(Invoke-RestMethod https://christitus.com/win) } -Config '$MainPath\WinUtil.json'"
     }
 
-    if ($firewall -eq "Y" -or $firewall -eq "y") {
-        try {
-            $name = "DCS_server"
-            $inName = "$name Inbound"; $outName = "$name Outbound"
-            if (-not (Get-NetFirewallRule -DisplayName $inName -ErrorAction SilentlyContinue)) {
-                New-NetFirewallRule -DisplayName $inName -Direction Inbound -Program $ServerPath -Action Allow
-                Write-Log "Added $inName firewall rule."
+
+    # Set exclusion in Windows Defender
+
+    if ($exclusion -eq "Y" -or $exclusion -eq "y") {
+
+        $excluded = Get-MpPreference | Select-Object -ExpandProperty ExclusionPath | Where-Object { $_ -eq $MainPath }
+        if (-not $excluded) {
+            Write-Log "Adding $MainPath to Windows Defender exclusions."
+            Add-MpPreference -ExclusionPath $MainPath -ErrorAction Stop
+        } else {
+            Write-Log "$MainPath is already in Windows Defender exclusions."
+        }
+
+    }
+
+
+    # Download DCS Server installer
+
+    if (Test-Path $InstallerPath) {
+        Write-Log "DCS Server installer found at $InstallerPath."
+    }
+    elseif (Test-Path $UpdaterPath) {
+        Write-Log "DCS_updater found at $UpdaterPath."
+    }
+    else {
+        $scrape = (Invoke-WebRequest -Uri $DCSuri -UseBasicParsing -ErrorAction Stop).Links.Href | Get-Unique
+        $allmatches = ($scrape | Select-String $DCSinstaller -AllMatches).Matches
+        
+        foreach ($link in $allmatches) {
+            if ($link.Value -match $DCSinstaller) {
+                $downloader = $link.Value
             }
-            if (-not (Get-NetFirewallRule -DisplayName $outName -ErrorAction SilentlyContinue)) {
-                New-NetFirewallRule -DisplayName $outName -Direction Outbound -Program $ServerPath -Action Allow
-                Write-Log "Added $outName firewall rule."
-            }
-        } catch {
-            Write-ErrorAndHalt "Unable to add $name to Firewall: $_"
+        }
+        Invoke-WebRequest -Uri $DCSsite$downloader -OutFile $InstallerPath -UseBasicParsing -ErrorAction Stop
+        if (Test-Path $InstallerPath) {
+            Write-Log "DCS Server installer successfully downloaded."
+        }
+        else {
+            Write-Log "DCS Server installer download failed."
+            exit
         }
     }
 
-    if ($dynamic -eq "Y" -or $dynamic -eq "y") {
-        Set-Content -Path $MissionScriptPath -Value $MissionScriptContent
-        Write-Log "MissionScripting.lua modified."
+
+    # Install DCS server
+
+    if ((Test-Path $UpdaterPath) -and (Test-Path $ServerPath)) {
+        Write-Log "Server already installed."
     }
+    elseif ((Test-Path $UpdaterPath) -and (-not(Test-Path $ServerPath))) {
+        Write-Log "Launching DCS_updater..."
+        Start-Process $UpdaterPath -Wait -ErrorAction Stop
+    }
+    else {
+        Set-ClipboardWithRetry "$ServerFolder"
+
+        Write-Host "COPIED INSTALLATION PATH TO CLIPBOARD" -ForegroundColor Yellow
+        Write-Host "PASTE IT INTO THE INSTALLER WHEN NEEDED" -ForegroundColor Yellow
+        Write-Host "Copied '$ServerFolder'" -ForegroundColor White
+        Start-Sleep -Seconds 1
+
+        Write-Log "Starting DCS Server installer."
+        Start-Process $InstallerPath -Wait -ErrorAction Stop
+
+        Start-Sleep -Seconds 3
+
+        Write-Log "Killing DCS process."
+        Stop-Process -Name "DCS_server" -Force
+
+        if ((Test-Path $ServerPath) -and (Test-Path $UpdaterPath) -and (Test-Path $MissionScriptPath)) {
+            Write-Log "DCS Server installed successfully."
+        } else {
+            Write-Log "DCS not installed, terminating script." -Level "ERROR"
+            return
+        }
+
+        if ($firewall -eq "Y" -or $firewall -eq "y") {
+            try {
+                $name = "DCS_server"
+                $inName = "$name Inbound"; $outName = "$name Outbound"
+                if (-not (Get-NetFirewallRule -DisplayName $inName -ErrorAction SilentlyContinue)) {
+                    New-NetFirewallRule -DisplayName $inName -Direction Inbound -Program $ServerPath -Action Allow
+                    Write-Log "Added $inName firewall rule."
+                }
+                if (-not (Get-NetFirewallRule -DisplayName $outName -ErrorAction SilentlyContinue)) {
+                    New-NetFirewallRule -DisplayName $outName -Direction Outbound -Program $ServerPath -Action Allow
+                    Write-Log "Added $outName firewall rule."
+                }
+            } catch {
+                Write-ErrorAndHalt "Unable to add $name to Firewall: $_"
+            }
+        }
+
+        if ($dynamic -eq "Y" -or $dynamic -eq "y") {
+            Set-Content -Path $MissionScriptPath -Value $MissionScriptContent
+            Write-Log "MissionScripting.lua modified."
+        }
+    }
+} catch {
+    Write-Log "An error occurred: $_" -Level "ERROR"
 }
 
 
