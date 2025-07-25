@@ -23,7 +23,7 @@ $MissionScriptPath = "$ServerFolder\Scripts\MissionScripting.lua"
 
 # User prompts
 Write-Host "Fresh system install?" -ForegroundColor Yellow
-Write-Host "(Will install 7-zip, notepad++, brave-browser, and dotnet)" -ForegroundColor Yellow
+Write-Host "(Will install 7-zip, notepad++, and dotnet)" -ForegroundColor Yellow
 $fresh = Read-Host "[Y/N]"
 
 Write-Host "Add exclusion to Windows Defender for '$MainPath'?" -ForegroundColor Yellow
@@ -53,10 +53,6 @@ $winUtil = @"
                     {
                         "winget":  "Microsoft.DotNet.DesktopRuntime.9",
                         "choco":  "dotnet-9.0-runtime"
-                    },
-                    {
-                        "winget":  "Brave.Brave",
-                        "choco":  "brave"
                     },
                     {
                         "winget":  "Notepad++.Notepad++",
