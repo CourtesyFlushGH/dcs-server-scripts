@@ -152,7 +152,7 @@ try {
         Write-Log "Performing fresh system install."
         New-Item -Path $MainPath\WinUtil.json -ItemType File -Force -Value $winUtil -ErrorAction Stop
 
-        Invoke-Expression "& { $(Invoke-RestMethod https://christitus.com/win) } -Config '$MainPath\WinUtil.json'"
+        Invoke-Expression "& { $(Invoke-RestMethod https://christitus.com/win) } -Config '$MainPath\WinUtil.json' -Run"
     }
 
 
