@@ -266,7 +266,7 @@ try {
     Start-Process $UpdaterPath -Wait -ErrorAction Stop
 
 } catch {
-    Write-Log "An error occurred: $_" -Level "ERROR"
+    Write-Log "Error during DCS installation: $_" -Level "ERROR"
 }
 
 
