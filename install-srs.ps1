@@ -103,11 +103,11 @@ try {
     $releaseObj = Invoke-RestMethod $releases
     $tag = $releaseObj.tag_name
     $download = "https://github.com/ciribob/DCS-SimpleRadioStandalone/releases/download/$tag/SRS-AutoUpdater.exe"
-    $srsInstaller = "$MainFolder\SRS-AutoUpdater.exe"
+    $srsInstaller = "$MainPath\SRS-AutoUpdater.exe"
 
     Invoke-WebRequest $download -OutFile $srsInstaller -ErrorAction Stop
 
-    Set-ClipboardWithRetry "$MainFolder\DCS-SimpleRadio-Standalone"
+    Set-ClipboardWithRetry "$MainPath\DCS-SimpleRadio-Standalone"
     Write-Host "SRS installation path copied to clipboard." -ForegroundColor Yellow
     Start-Process -FilePath $srsInstaller -Wait -ErrorAction Stop
 
@@ -117,7 +117,7 @@ try {
             if (-not $customIP) {
                 $ip = (Invoke-WebRequest ifconfig.me/ip).Content.Trim()
             }
-            $filePath = "$MainFolder\DCS-SimpleRadio-Standalone\Scripts\DCS-SRS-AutoConnectGameGUI.lua"
+            $filePath = "$MainPath\DCS-SimpleRadio-Standalone\Scripts\DCS-SRS-AutoConnectGameGUI.lua"
             if (Test-Path $filePath) {
                 (Get-Content $filePath) -replace 'SRSAuto.SERVER_SRS_HOST = ".*"', "SRSAuto.SERVER_SRS_HOST = `"$ip`"" | Set-Content $filePath
                 $dest = "$env:USERPROFILE\Saved Games\DCS.server_release\Scripts\Hooks"
