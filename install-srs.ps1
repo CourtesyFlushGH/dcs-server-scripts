@@ -35,15 +35,10 @@ $winUtil = @"
                     {
                         "winget":  "Microsoft.DotNet.DesktopRuntime.8",
                         "choco":  "dotnet-8.0-runtime"
-                    },
-                    {
-                        "winget":  "Microsoft.DotNet.DesktopRuntime.9",
-                        "choco":  "dotnet-9.0-runtime"
                     }
                 ],
     "WPFInstall":  [
-                       "WPFInstalldotnet8",
-                       "WPFInstalldotnet9"
+                       "WPFInstalldotnet8"
                    ],
     "WPFFeature":  [
 
@@ -121,7 +116,7 @@ try {
             if (Test-Path $filePath) {
                 (Get-Content $filePath) -replace 'SRSAuto.SERVER_SRS_HOST = ".*"', "SRSAuto.SERVER_SRS_HOST = `"$ip`"" | Set-Content $filePath
                 $dest = "$env:USERPROFILE\Saved Games\DCS.server_release\Scripts\Hooks"
-                Test-Directory $dest
+                Test-Path $dest
                 Copy-Item $filePath -Destination $dest -Force
                 Write-Log "SRS autoconnect script configured."
             } else {
@@ -130,6 +125,12 @@ try {
         } catch {
             Write-Log "SRS autoconnect script setup failed: $_" -Level "ERROR"
         }
+    }
+
+    # Test installation
+    if (-not (Test-Path $pathSRS)) {
+        Write-Log "SRS installation failed, SRS Server executable not found at $pathSRS" -Level "ERROR"
+        return
     }
 
     # Add firewall rules
