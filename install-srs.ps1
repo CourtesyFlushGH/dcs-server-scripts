@@ -10,6 +10,18 @@ $LogPath = "C:\Logs\srs-install-script.txt"
 # SRS Path
 $pathSRS = "$MainPath\DCS-SimpleRadio-Standalone\Server\SRS-Server.exe"
 
+# Autoconnect
+Write-Host "Set up SRS autoconnect script?" -ForegroundColor Yellow
+$autoconnect = Read-Host "[Y/N]"
+
+if ($autoconnect -eq "Y" -or $autoconnect -eq "y") {
+    Write-Host "Enter custom IP address for SRS autoconnect?" -ForegroundColor Yellow
+    $customIP = Read-Host "[Y/N]"
+    if ($customIP -eq "Y" -or $customIP -eq "y") {
+        $ip = Read-Host "[IP Address or Domain]"
+    }
+}
+
 $winUtil = @"
 {
     "WPFTweaks":  [
@@ -95,21 +107,25 @@ try {
     Write-Host "SRS installation path copied to clipboard." -ForegroundColor Yellow
     Start-Process -FilePath $srsInstaller -Wait -ErrorAction Stop
 
-    try {
-        Write-Log "Setting up SRS autoconnect script..."
-        $ip = (Invoke-WebRequest ifconfig.me/ip).Content.Trim()
-        $filePath = "$MainFolder\DCS-SimpleRadio-Standalone\Scripts\DCS-SRS-AutoConnectGameGUI.lua"
-        if (Test-Path $filePath) {
-            (Get-Content $filePath) -replace 'SRSAuto.SERVER_SRS_HOST = ".*"', "SRSAuto.SERVER_SRS_HOST = `"$ip`"" | Set-Content $filePath
-            $dest = "$env:USERPROFILE\Saved Games\DCS.server_release\Scripts\Hooks"
-            Test-Directory $dest
-            Copy-Item $filePath -Destination $dest -Force
-            Write-Log "SRS autoconnect script configured."
-        } else {
-            Write-Log "SRS autoconnect source script not found: $filePath" -Level "ERROR"
+    if ($autoconnect -eq "Y" -or $autoconnect -eq "y") {
+        try {
+            Write-Log "Setting up SRS autoconnect script..."
+            if (-not $customIP) {
+                $ip = (Invoke-WebRequest ifconfig.me/ip).Content.Trim()
+            }
+            $filePath = "$MainFolder\DCS-SimpleRadio-Standalone\Scripts\DCS-SRS-AutoConnectGameGUI.lua"
+            if (Test-Path $filePath) {
+                (Get-Content $filePath) -replace 'SRSAuto.SERVER_SRS_HOST = ".*"', "SRSAuto.SERVER_SRS_HOST = `"$ip`"" | Set-Content $filePath
+                $dest = "$env:USERPROFILE\Saved Games\DCS.server_release\Scripts\Hooks"
+                Test-Directory $dest
+                Copy-Item $filePath -Destination $dest -Force
+                Write-Log "SRS autoconnect script configured."
+            } else {
+                Write-Log "SRS autoconnect source script not found: $filePath" -Level "ERROR"
+            }
+        } catch {
+            Write-Log "SRS autoconnect script setup failed: $_" -Level "ERROR"
         }
-    } catch {
-        Write-Log "SRS autoconnect script setup failed: $_" -Level "ERROR"
     }
 
     $name = "SRS Server"
