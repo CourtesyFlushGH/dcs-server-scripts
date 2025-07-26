@@ -10,6 +10,10 @@ $LogPath = "C:\Logs\srs-install-script.txt"
 # SRS Path
 $pathSRS = "$MainPath\DCS-SimpleRadio-Standalone\Server\SRS-Server.exe"
 
+# Firewall rules
+Write-Host "Add Windows Firewall rules for '$pathSRS'?" -ForegroundColor Yellow
+$firewall = Read-Host "[Y/N]"
+
 # Autoconnect
 Write-Host "Set up SRS autoconnect script?" -ForegroundColor Yellow
 $autoconnect = Read-Host "[Y/N]"
@@ -128,15 +132,23 @@ try {
         }
     }
 
-    $name = "SRS Server"
-    $inName = "$name Inbound"; $outName = "$name Outbound"
-    if (-not (Get-NetFirewallRule -DisplayName $inName -ErrorAction SilentlyContinue)) {
-        New-NetFirewallRule -DisplayName $inName -Direction Inbound -Program $pathSRS -Action Allow -ErrorAction Stop
-        Write-Log "Added $inName firewall rule."
-    }
-    if (-not (Get-NetFirewallRule -DisplayName $outName -ErrorAction SilentlyContinue)) {
-        New-NetFirewallRule -DisplayName $outName -Direction Outbound -Program $pathSRS -Action Allow -ErrorAction Stop
-        Write-Log "Added $outName firewall rule."
+    # Add firewall rules
+    if ($firewall -eq "Y" -or $firewall -eq "y") {
+        Write-Log "Adding firewall rules for SRS..."
+        $inName = "SRS Server Inbound"
+        $outName = "SRS Server Outbound"
+        if (-not (Get-NetFirewallRule -DisplayName $inName -ErrorAction SilentlyContinue)) {
+            New-NetFirewallRule -DisplayName $inName -Direction Inbound -Program $pathSRS -Action Allow -ErrorAction Stop
+            Write-Log "Added $inName firewall rule."
+        } else {
+            Write-Log "$inName firewall rule already exists."
+        }
+        if (-not (Get-NetFirewallRule -DisplayName $outName -ErrorAction SilentlyContinue)) {
+            New-NetFirewallRule -DisplayName $outName -Direction Outbound -Program $pathSRS -Action Allow -ErrorAction Stop
+            Write-Log "Added $outName firewall rule."
+        } else {
+            Write-Log "$outName firewall rule already exists."
+        }
     }
 
     # Clean up
