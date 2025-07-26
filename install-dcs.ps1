@@ -263,7 +263,7 @@ try {
     Remove-Item -Path "$MainPath\WinUtil.json" -Force -ErrorAction SilentlyContinue
 
     Write-Log "Installation script completed successfully, running DCS_updater for login."
-    Start-Process $UpdaterPath -Wait -ErrorAction Stop
+    Start-Process $UpdaterPath -ErrorAction Stop
 
 } catch {
     Write-Log "Error during DCS installation: $_" -Level "ERROR"
