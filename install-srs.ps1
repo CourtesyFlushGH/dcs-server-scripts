@@ -18,14 +18,6 @@ $firewall = Read-Host "[Y/N]"
 Write-Host "Set up SRS autoconnect script?" -ForegroundColor Yellow
 $autoconnect = Read-Host "[Y/N]"
 
-if ($autoconnect -eq "Y" -or $autoconnect -eq "y") {
-    Write-Host "Enter custom IP address for SRS autoconnect?" -ForegroundColor Yellow
-    $customIP = Read-Host "[Y/N]"
-    if ($customIP -eq "Y" -or $customIP -eq "y") {
-        $ip = Read-Host "[IP Address or Domain]"
-    }
-}
-
 $winUtil = @"
 {
     "WPFTweaks":  [
@@ -77,7 +69,8 @@ function Set-ClipboardWithRetry {
             Start-Sleep -Milliseconds 500
         }
     }
-    if (Get-Clipboard -eq $Value) {
+    $getClipboard = Get-Clipboard -ErrorAction SilentlyContinue
+    if ($getClipboard -eq $Value) {
         Write-Log "Successfully copied '$Value' to clipboard."
         return
     } else {
@@ -113,9 +106,8 @@ try {
     if ($autoconnect -eq "Y" -or $autoconnect -eq "y") {
         try {
             Write-Log "Setting up SRS autoconnect script..."
-            if ($customIP -ne "Y" -and $customIP -ne "y") {
-                $ip = (Invoke-WebRequest ifconfig.me/ip).Content.Trim()
-            }
+
+            $ip = (Invoke-WebRequest ifconfig.me/ip).Content.Trim()
             $filePath = "$MainPath\DCS-SimpleRadio-Standalone\Scripts\DCS-SRS-AutoConnectGameGUI.lua"
             if (Test-Path $filePath) {
                 (Get-Content $filePath) -replace 'SRSAuto.SERVER_SRS_HOST = ".*"', "SRSAuto.SERVER_SRS_HOST = `"$ip`"" | Set-Content $filePath
