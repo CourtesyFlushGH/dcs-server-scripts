@@ -261,6 +261,9 @@ try {
     Write-Log "Cleaning up..."
     Remove-Item -Path $InstallerPath -Force -ErrorAction SilentlyContinue
     Remove-Item -Path "$MainPath\WinUtil.json" -Force -ErrorAction SilentlyContinue
+    if (Test-Path "$env:USERPROFILE\Saved Games\DCS.release_server") {
+        Remove-Item -Path "$env:USERPROFILE\Saved Games\DCS.release_server" -Force -ErrorAction SilentlyContinue
+    }
 
     Write-Log "Installation script completed successfully, running DCS_updater for login."
     Start-Process $UpdaterPath -ErrorAction Stop
