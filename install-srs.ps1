@@ -113,7 +113,7 @@ try {
     if ($autoconnect -eq "Y" -or $autoconnect -eq "y") {
         try {
             Write-Log "Setting up SRS autoconnect script..."
-            if (-not $customIP) {
+            if ($customIP -ne "Y" -and $customIP -ne "y") {
                 $ip = (Invoke-WebRequest ifconfig.me/ip).Content.Trim()
             }
             $filePath = "$MainPath\DCS-SimpleRadio-Standalone\Scripts\DCS-SRS-AutoConnectGameGUI.lua"
