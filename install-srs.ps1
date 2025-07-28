@@ -77,8 +77,13 @@ function Set-ClipboardWithRetry {
             Start-Sleep -Milliseconds 500
         }
     }
-    Write-Log "All attempts to copy '$Value' to clipboard failed." -Level "ERROR"
-    Write-Host "Manually copy: $Value" -ForegroundColor Yellow
+    if (Get-Clipboard -eq $Value) {
+        Write-Log "Successfully copied '$Value' to clipboard."
+        return
+    } else {
+        Write-Log "All attempts to copy '$Value' to clipboard failed." -Level "ERROR"
+        Write-Host "Manually copy: $Value" -ForegroundColor Yellow
+    }
     return
 }
 
