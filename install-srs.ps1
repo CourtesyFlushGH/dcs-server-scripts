@@ -71,14 +71,14 @@ function Set-ClipboardWithRetry {
             Set-Clipboard -Value $Value
             Write-Log "Copied $Value to clipboard (attempt $($Attempts+1))."
             return
-        }
-        catch {
+        } catch {
             $Attempts++
-            Write-Log "Clipboard operation failed on attempt $($Attempts): $_" -Level "WARNING"
+            Write-Log "Attempt $($Attempts): $_" -Level "WARNING"
             Start-Sleep -Milliseconds 500
         }
     }
     Write-Log "All attempts to copy '$Value' to clipboard failed." -Level "ERROR"
+    Write-Host "Manually copy: $Value" -ForegroundColor Yellow
     return
 }
 
@@ -103,7 +103,6 @@ try {
     Invoke-WebRequest $download -OutFile $srsInstaller -ErrorAction Stop
 
     Set-ClipboardWithRetry "$MainPath\DCS-SimpleRadio-Standalone"
-    Write-Host "SRS installation path copied to clipboard." -ForegroundColor Yellow
     Start-Process -FilePath $srsInstaller -Wait -ErrorAction Stop
 
     if ($autoconnect -eq "Y" -or $autoconnect -eq "y") {
@@ -115,7 +114,10 @@ try {
             $filePath = "$MainPath\DCS-SimpleRadio-Standalone\Scripts\DCS-SRS-AutoConnectGameGUI.lua"
             if (Test-Path $filePath) {
                 (Get-Content $filePath) -replace 'SRSAuto.SERVER_SRS_HOST = ".*"', "SRSAuto.SERVER_SRS_HOST = `"$ip`"" | Set-Content $filePath
-                $dest = "$env:USERPROFILE\Saved Games\DCS.server_release\Scripts\Hooks"
+                $dest = "$env:USERPROFILE\Saved Games\DCS.dcs_serverrelease\Scripts\Hooks"
+                if (-not (Test-Path $dest) -and (Test-Path "C:\DCS World\DCS World Server\bin\DCS_updater.exe")) {
+                    New-Item -Path $dest -ItemType Directory -Force
+                }
                 Test-Path $dest
                 Copy-Item $filePath -Destination $dest -Force
                 Write-Log "SRS autoconnect script configured."
