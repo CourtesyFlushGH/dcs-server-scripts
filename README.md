@@ -6,6 +6,8 @@ PowerShell scripts I use for my DCS World server.
 
 ## Install DCS script
 
+Use to pull the latest DCS server installer from the eagle dynamics website and run it. Optionally opens [WinUtil](https://github.com/ChrisTitusTech/winutil) to install 7-zip, notepad++, and dotnet.
+
 Open PowerShell as Administrator and run the following:
 
 ```iwr https://raw.githubusercontent.com/CourtesyFlushGH/dcs-server-scripts/main/install-dcs.ps1 | iex```
@@ -19,6 +21,8 @@ In WinUtil the proper packages should be selected, press `Install/Upgrade Applic
 Default install location is `C:\DCS World\DCS World Server`, which you will need to paste into the installer.
 
 ## Install SRS script
+
+Use to pull the latest SRS installer from GitHub and run it. It will also open [WinUtil](https://github.com/ChrisTitusTech/winutil) to install dotnet dependencies.
 
 Open PowerShell as Administrator and run the following:
 
