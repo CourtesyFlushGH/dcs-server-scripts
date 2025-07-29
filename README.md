@@ -29,3 +29,17 @@ Or download the script and run with powershell admin.
 Go through the install GUIs.
 
 In WinUtil the proper packages should be selected, press `Install/Upgrade Applications`. Exit the WinUtil GUI when the installs are finished to continue the script.
+
+## Test DCS script
+
+Download and use with Windows Task Scheduler:
+
+[Guide for setting up Task Scheduler PowerShell scripts](https://o365reports.com/2019/08/02/schedule-powershell-script-task-scheduler/)
+
+![Test-DCS-Task-General](/images/test-dcs-task-general.png)
+
+![Test-DCS-Task-Trigger](/images/test-dcs-task-trigger.png)
+
+![Test-DCS-Task-Action](/images/test-dcs-task-action.png)
+
+For `Add arguments (optional):` add `-File "C:\DCS World\test-dcs.ps1"` or the path to wherever you put the script.
