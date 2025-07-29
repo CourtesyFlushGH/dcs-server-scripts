@@ -36,7 +36,9 @@ In WinUtil the proper packages should be selected, press `Install/Upgrade Applic
 
 ## Test DCS script
 
-Download and use with Windows Task Scheduler:
+Use to check if the DCS server is running, and start the server if it is not.
+
+Download script and use with Windows Task Scheduler:
 
 [Guide for setting up Task Scheduler PowerShell scripts](https://o365reports.com/2019/08/02/schedule-powershell-script-task-scheduler/)
 
@@ -47,3 +49,19 @@ Download and use with Windows Task Scheduler:
 ![Test-DCS-Task-Action](/images/test-dcs-task-action.png)
 
 For `Add arguments (optional):` add `-File "C:\DCS World\test-dcs.ps1"` or the path to wherever you put the script.
+
+## Restart DCS script
+
+Use to restart the DCS server whenever you want.
+
+Download script and use with Windows Task Scheduler:
+
+[Guide for setting up Task Scheduler PowerShell scripts](https://o365reports.com/2019/08/02/schedule-powershell-script-task-scheduler/)
+
+![Restart-DCS-Task-General](/images/restart-dcs-task-general.png)
+
+![Restart-DCS-Task-Trigger](/images/restart-dcs-task-trigger.png)
+
+![Restart-DCS-Task-Action](/images/restart-dcs-task-action.png)
+
+For `Add arguments (optional):` add `-File "C:\DCS World\restart-dcs.ps1"` or the path to wherever you put the script.
