@@ -1,25 +1,26 @@
 
 param (
     # Main folder path (server folder will go in here)
-    [string]$MainPath = "C:\DCS World"   
+    [string]$MainPath = "C:\DCS World",
+
+    # Write-Log
+    [string]$LogPath = "C:\Logs\dcs-install-script.txt",
+
+    # Get-DCSInstaller
+    [string]$InstallerPath = "$MainPath\server_installer.exe",
+    [string]$DCSuri = "https://www.digitalcombatsimulator.com/en/downloads/world/server/",
+    [string]$DCSsite = "https://www.digitalcombatsimulator.com",
+    [string]$DCSinstaller = ".*/DCS_World_Server_modular.exe",
+
+    # Install-DCSServer
+    [string]$ServerFolder = "$MainPath\DCS World Server",
+    [string]$UpdaterPath = "$ServerFolder\bin\DCS_updater.exe",
+    [string]$ServerPath = "$ServerFolder\bin\DCS_server.exe",
+
+    # MissionScipt.lua Modifiers
+    [string]$MissionScriptPath = "$ServerFolder\Scripts\MissionScripting.lua"
 )
 
-# Write-Log
-$LogPath = "C:\Logs\dcs-install-script.txt"
-
-# Get-DCSInstaller
-$InstallerPath = "$MainPath\server_installer.exe"
-$DCSuri = "https://www.digitalcombatsimulator.com/en/downloads/world/server/"
-$DCSsite = "https://www.digitalcombatsimulator.com"
-$DCSinstaller = ".*/DCS_World_Server_modular.exe"
-
-# Install-DCSServer
-$ServerFolder = "$MainPath\DCS World Server"
-$UpdaterPath = "$ServerFolder\bin\DCS_updater.exe"
-$ServerPath = "$ServerFolder\bin\DCS_server.exe"
-
-# MissionScipt.lua Modifiers
-$MissionScriptPath = "$ServerFolder\Scripts\MissionScripting.lua"
 
 # User prompts
 Write-Host "Open WinUtil to install 7-zip, notepad++, and dotnet?" -ForegroundColor Yellow
@@ -35,6 +36,7 @@ $firewall = Read-Host "[Y/N]"
 Write-Host "Modify MissionScripting.lua to be compatible with dynamic campaigns?" -ForegroundColor Yellow
 $dynamic = Read-Host "[Y/N]"
 
+# WinUtil JSON
 $winUtil = @"
 {
     "WPFTweaks":  [

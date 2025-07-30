@@ -1,14 +1,16 @@
 
 param (
     # Main folder path (server folder will go in here)
-    [string]$MainPath = "C:\DCS World"   
+    [string]$MainPath = "C:\DCS World",
+
+    # Write-Log
+    [string]$LogPath = "C:\Logs\srs-install-script.txt",
+
+    # SRS Path
+    [string]$pathSRS = "$MainPath\DCS-SimpleRadio-Standalone\Server\SRS-Server.exe"
 )
 
-# Write-Log
-$LogPath = "C:\Logs\srs-install-script.txt"
 
-# SRS Path
-$pathSRS = "$MainPath\DCS-SimpleRadio-Standalone\Server\SRS-Server.exe"
 
 # Firewall rules
 Write-Host "Add Windows Firewall rules for '$pathSRS'?" -ForegroundColor Yellow
