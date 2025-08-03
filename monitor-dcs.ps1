@@ -8,6 +8,7 @@ param(
 
     # How often to check the server
     [int]$CheckInterval = 60, # Seconds
+    [bool]$RealtimeUpdate = $false, # If true, gives a countdown for server checks in the console
 
     # Restart options
     [bool]$restartDCS = $true,
@@ -82,9 +83,10 @@ function Test-DCS {
     }
 }
 
+$webversion = $null
 function Get-Version {
     $DCSVersion = 'https://www.digitalcombatsimulator.com/en/news/changelog/release/.*'
-    $webversion = $null
+    
 
     $scrape = (Invoke-WebRequest -Uri "https://updates.digitalcombatsimulator.com/" -UseBasicParsing).Links.Href | Get-Unique
 
@@ -121,7 +123,6 @@ function Test-Time {
             while ($seconds -gt 0) {
                 Clear-Host
                 Write-Host "######################################################"
-                Write-Host "        DCS Server Monitor by CourtesyFlushGH"
                 Write-Host "           Restarting Server in $seconds seconds"
                 Write-Host "######################################################"
                 Start-Sleep -Seconds 1
@@ -139,6 +140,32 @@ function Test-Day {
     return ((Get-Date).DayOfWeek.ToString() -eq $restartDay)
 }
 
+# Function to get next restart time
+function Get-NextRestartTime {
+    try {
+        $time = [datetime]::ParseExact($restartTime,"HH:mm",$null)
+        $today = Get-Date -Hour $time.Hour -Minute $time.Minute -Second 0 -Millisecond 0
+        
+        if ($restartWeekly) {
+            $targetDay = [System.DayOfWeek]::$restartDay
+            $daysUntilTarget = ($targetDay - (Get-Date).DayOfWeek + 7) % 7
+            if ($daysUntilTarget -eq 0 -and (Get-Date) -gt $today) {
+                $daysUntilTarget = 7
+            }
+            return $today.AddDays($daysUntilTarget)
+        } elseif ($restartDaily) {
+            if ((Get-Date) -gt $today) {
+                return $today.AddDays(1)
+            } else {
+                return $today
+            }
+        }
+    } catch {
+        return "Invalid time format"
+    }
+}
+
+$lastRestart = "Never"
 $loop = $true
 while ($loop) {
     $restarts = 0
@@ -150,6 +177,7 @@ while ($loop) {
                 Stop-DCS
                 Start-Sleep -Seconds 5
                 Start-DCS
+                $lastRestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
                 $restarts++
             }
         } elseif ($restartDaily) {
@@ -157,6 +185,7 @@ while ($loop) {
                 Stop-DCS
                 Start-Sleep -Seconds 5
                 Start-DCS
+                $lastRestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
                 $restarts++
             }
         }
@@ -168,14 +197,53 @@ while ($loop) {
 
     Test-DCS
 
-    $seconds = $CheckInterval
-    while ($seconds -gt 0) {
+    $nextRestart = if ($restartDCS) { Get-NextRestartTime } else { "Disabled" }
+    $version = Get-Content -Path "$MainPath\scripts\version.txt" -ErrorAction SilentlyContinue
+    if ($RealtimeUpdate) {
+        $seconds = $CheckInterval
+        while ($seconds -gt 0) {
+            Clear-Host
+            Write-Host "#####################################################"
+            Write-Host ""
+            Write-Host "        DCS Server Monitor by CourtesyFlushGH"
+            Write-Host ""
+            Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
+            Write-Host ""
+            Write-Host "              DCS Version: $version"
+            Write-Host "                  Update set to $Update"
+            Write-Host ""
+            Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
+            Write-Host ""
+            Write-Host "          Next restart: $nextRestart"
+            Write-Host "          Last restart: $lastRestart"
+            Write-Host ""
+            Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
+            Write-Host ""
+            Write-Host "              Next check in $seconds seconds"
+            Write-Host ""
+            Write-Host "#####################################################"
+            Start-Sleep -Seconds 1
+            $seconds--
+        }
+    } else {
         Clear-Host
-        Write-Host "######################################################"
+        Write-Host "#####################################################"
+        Write-Host ""
         Write-Host "        DCS Server Monitor by CourtesyFlushGH"
-        Write-Host "              Next check in $seconds seconds"
-        Write-Host "######################################################"
-        Start-Sleep -Seconds 1
-        $seconds--
+        Write-Host ""
+        Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
+        Write-Host ""
+        Write-Host "              DCS Version: $version"
+        Write-Host "                  Update set to $Update"
+        Write-Host ""
+        Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
+        Write-Host ""
+        Write-Host "          Next restart: $nextRestart"
+        Write-Host "          Last restart: $lastRestart"
+        Write-Host ""
+        Write-Host "#####################################################"
+
+        Start-Sleep -Seconds $CheckInterval
     }
+    
 }
