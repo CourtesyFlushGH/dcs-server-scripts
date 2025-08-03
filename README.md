@@ -34,34 +34,16 @@ Go through the install GUIs.
 
 In WinUtil the proper packages should be selected, press `Install/Upgrade Applications`. Exit the WinUtil GUI when the installs are finished to continue the script.
 
-## Test DCS script
+## Monitor DCS script
 
-Use to check if the DCS server is running, and start the server if it is not.
+Download and either start with Task Scheduler or right-click and Run With Powershell (might need to be run with Admin).
 
-Download script and use with Windows Task Scheduler:
+Before running, edit the script parameters to your preference and make sure your server is up to date.
 
-[Guide for setting up Task Scheduler PowerShell scripts](https://o365reports.com/2019/08/02/schedule-powershell-script-task-scheduler/)
+This script will do the following every X amount of seconds (depending on parameters):
+- check if the server needs to be restarted according to the restart time / day
+- check if there's been a version update by parsing https://updates.digitalcombatsimulator.com/
+- check if the processes DCS_server or DCS_updater are running
+- start / restart the server as needed
 
-![Test-DCS-Task-General](/images/test-dcs-task-general.png)
-
-![Test-DCS-Task-Trigger](/images/test-dcs-task-trigger.png)
-
-![Test-DCS-Task-Action](/images/test-dcs-task-action.png)
-
-For `Add arguments (optional):` add `-File "C:\DCS World\test-dcs.ps1"` or the path to wherever you put the script.
-
-## Restart DCS script
-
-Use to restart the DCS server whenever you want.
-
-Download script and use with Windows Task Scheduler:
-
-[Guide for setting up Task Scheduler PowerShell scripts](https://o365reports.com/2019/08/02/schedule-powershell-script-task-scheduler/)
-
-![Restart-DCS-Task-General](/images/restart-dcs-task-general.png)
-
-![Restart-DCS-Task-Trigger](/images/restart-dcs-task-trigger.png)
-
-![Restart-DCS-Task-Action](/images/restart-dcs-task-action.png)
-
-For `Add arguments (optional):` add `-File "C:\DCS World\restart-dcs.ps1"` or the path to wherever you put the script.
+During the first version check, it will create a `version.txt` file in a `scripts` folder in the main folder path. The script uses this file as a comparison for the version checks.
