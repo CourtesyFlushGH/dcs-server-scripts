@@ -118,12 +118,12 @@ function Get-NextRestartTime {
             if ($daysUntilTarget -eq 0 -and (Get-Date) -gt $today) {
                 $daysUntilTarget = 7
             }
-            return $today.AddDays($daysUntilTarget)
+            return ($today.AddDays($daysUntilTarget)).ToString("yyyy-MM-dd HH:mm:ss")
         } elseif ($restartDaily) {
             if ((Get-Date) -gt $today) {
-                return $today.AddDays(1)
+                return ($today.AddDays(1)).ToString("yyyy-MM-dd HH:mm:ss")
             } else {
-                return $today
+                return $today.ToString("yyyy-MM-dd HH:mm:ss")
             }
         }
     } catch {
