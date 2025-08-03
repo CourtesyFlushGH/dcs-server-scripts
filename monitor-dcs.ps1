@@ -17,6 +17,9 @@ param(
     [string]$restartDay = "Monday", # Only applicable if $restartWeekly is true
     [string]$restartTime = "02:00", # HH:mm format
 
+    # Dynamic campaign support
+    [bool]$DynamicCampaign = $true, # If true, will edit missionscripting.lua to enable dynamic campaigns
+
     # Update options, will immediately update DCS if an update is detected
     [bool]$Update = $true,
 
@@ -26,10 +29,64 @@ param(
     [string]$UpdaterProcess = "DCS_updater"
 )
 
+# MissionScripting.lua content for dynamic campaigns
+# Works as is for dynamic campaigns, but edit for your specific needs if necessary
+$MissionScriptDynamic = @"
+--Initialization script for the Mission lua Environment (SSE)
+
+dofile('Scripts/ScriptingSystem.lua')
+
+--Sanitize Mission Scripting environment
+--This makes unavailable some unsecure functions. 
+--Mission downloaded from server to client may contain potentialy harmful lua code that may use these functions.
+--You can remove the code below and make availble these functions at your own risk.
+
+local function sanitizeModule(name)
+	_G[name] = nil
+	package.loaded[name] = nil
+end
+
+do
+	sanitizeModule('os')
+	--sanitizeModule('io')
+	--sanitizeModule('lfs')
+	_G['require'] = nil
+	_G['loadlib'] = nil
+	_G['package'] = nil
+end
+"@
+
 ###############################################################
 # Do not edit below this line unless you know what you're doing
 ###############################################################
 
+# Default MissionScripting.lua for reference
+$MissionScriptVanilla = @"
+--Initialization script for the Mission lua Environment (SSE)
+
+dofile('Scripts/ScriptingSystem.lua')
+
+--Sanitize Mission Scripting environment
+--This makes unavailable some unsecure functions. 
+--Mission downloaded from server to client may contain potentialy harmful lua code that may use these functions.
+--You can remove the code below and make availble these functions at your own risk.
+
+local function sanitizeModule(name)
+	_G[name] = nil
+	package.loaded[name] = nil
+end
+
+do
+	sanitizeModule('os')
+	sanitizeModule('io')
+	sanitizeModule('lfs')
+	_G['require'] = nil
+	_G['loadlib'] = nil
+	_G['package'] = nil
+end
+"@
+
+# Log function
 function Write-Log {
     param(
         [string]$Message,
@@ -55,6 +112,7 @@ function Get-DCSProcess {
     }
 }
 
+# Stop DCS Server process
 function Stop-DCS {
     $dcs = Get-DCSProcess
     if ($dcs) {
@@ -66,6 +124,7 @@ function Stop-DCS {
     }
 }
 
+# Start DCS Server process
 function Start-DCS {
     $dcs = Get-DCSProcess
     if (-not $dcs) {
@@ -76,13 +135,34 @@ function Start-DCS {
     }
 }
 
+# Set the MissionScripting.lua for dynamic campaigns
+function Set-MissionScript {
+    $updater = Get-Process -Name $UpdaterProcess -ErrorAction SilentlyContinue
+    $server = Get-Process -Name $ServerProcess -ErrorAction SilentlyContinue
+    if ($updater) {
+        while ($updater) {
+            Start-Sleep -Seconds 3
+            $updater = Get-Process -Name $UpdaterProcess -ErrorAction SilentlyContinue
+        }
+        Stop-DCS
+        Start-Sleep -Seconds 5
+    } elseif ($server) {
+        Stop-DCS
+        Start-Sleep -Seconds 5
+    }
+    Set-Content -Path "$DCSPath\Scripts\MissionScripting.lua" -Value $MissionScriptDynamic -Force
+    Write-Log "MissionScripting.lua updated."
+    Start-DCS
+}
 
+# Function to test if the current time is within the restart window
 function Test-Time {
     try {
         $time = [datetime]::ParseExact($restartTime,"HH:mm",$null)
         $now = Get-Date
         $minutes = ($CheckInterval / 60) * 2
         $restartLow = $time.AddMinutes(-$minutes)
+        # If the current time is within the restart window, wait until the restart time
         if ($now -gt $restartLow -and $now -lt $time) {
             $secondsLeft = [math]::Round(($time - $now).TotalSeconds)
             $seconds = $secondsLeft
@@ -102,6 +182,7 @@ function Test-Time {
     }
 }
 
+# Function to test if today is the restart day
 function Test-Day {
     return ((Get-Date).DayOfWeek.ToString() -eq $restartDay)
 }
@@ -131,10 +212,22 @@ function Get-NextRestartTime {
     }
 }
 
+# Restart loop so I don't have to write it multiple times cause I'm lazy
+function Restart-DCS {
+    Stop-DCS
+    Start-Sleep -Seconds 5
+    Start-DCS
+    if ($DynamicCampaign) {
+        Set-MissionScript
+    }
+}
+
+# Initialize variables
 $lastRestart = "Never"
 $webversion = $null
 $DCSVersion = 'https://www.digitalcombatsimulator.com/en/news/changelog/release/.*'
 
+# Main loop
 $loop = $true
 while ($loop) {
     try {
@@ -144,17 +237,13 @@ while ($loop) {
                 $day = Test-Day
                 $time = Test-Time
                 if ($day -and $time) {
-                    Stop-DCS
-                    Start-Sleep -Seconds 5
-                    Start-DCS
+                    Restart-DCS
                     $lastRestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
                     $restarts++
                 }
             } elseif ($restartDaily) {
                 if (Test-Time) {
-                    Stop-DCS
-                    Start-Sleep -Seconds 5
-                    Start-DCS
+                    Restart-DCS
                     $lastRestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
                     $restarts++
                 }
@@ -177,9 +266,7 @@ while ($loop) {
             $current = Get-Content -Path "$MainPath\scripts\version.txt" -ErrorAction SilentlyContinue
             if (-not ($webversion -eq $current)) {
                 Write-Log "DCS Version is outdated. Current: $current, Web: $webversion" -Level "WARNING"
-                Stop-DCS
-                Start-Sleep -Seconds 5
-                Start-DCS
+                Restart-DCS
                 Set-Content -Path "$MainPath\scripts\version.txt" -Value $webversion -Force
             }
         }
@@ -188,6 +275,9 @@ while ($loop) {
         if (-not $dcs) {
             Write-Log "DCS Server is not running."
             Start-DCS
+            if ($DynamicCampaign) {
+                Set-MissionScript
+            }
         }
 
         $nextRestart = if ($restartDCS) { Get-NextRestartTime } else { "Disabled" }
@@ -204,12 +294,16 @@ while ($loop) {
                 Write-Host ""
                 Write-Host "              DCS Version: $version"
                 Write-Host "              Web Version: $webversion"
-                Write-Host "                  Update set to $Update"
                 Write-Host ""
                 Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
                 Write-Host ""
                 Write-Host "          Next restart: $nextRestart"
                 Write-Host "          Last restart: $lastRestart"
+                Write-Host ""
+                Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
+                Write-Host ""
+                Write-Host "                Auto update DCS: $Update"
+                Write-Host "           Dynamic campaign support: $DynamicCampaign"
                 Write-Host ""
                 Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
                 Write-Host ""
@@ -229,12 +323,16 @@ while ($loop) {
             Write-Host ""
             Write-Host "              DCS Version: $version"
             Write-Host "              Web Version: $webversion"
-            Write-Host "                  Update set to $Update"
             Write-Host ""
             Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
             Write-Host ""
             Write-Host "          Next restart: $nextRestart"
             Write-Host "          Last restart: $lastRestart"
+            Write-Host ""
+            Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
+            Write-Host ""
+            Write-Host "                Auto update DCS: $Update"
+            Write-Host "           Dynamic campaign support: $DynamicCampaign"
             Write-Host ""
             Write-Host "#####################################################"
 
