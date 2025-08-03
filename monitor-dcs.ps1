@@ -1,4 +1,13 @@
-# PowerShell script to monitor and manage a DCS World Server by CourtesyFlushGH
+###################################
+#       Monitor DCS Script        #
+#       by CourtesyFlushGH        #
+#          Version: 1.0           #
+###################################
+
+##############################################
+# Edit the parameters below to suit your needs
+##############################################
+
 param(
     # Paths to DCS Server and its components
     [string]$MainPath = "C:\DCS World",
@@ -22,6 +31,11 @@ param(
 
     # Update options, will immediately update DCS if an update is detected
     [bool]$Update = $true,
+
+    # SRS options
+    [bool]$CheckSRS = $true, # If true, will check if SRS is running and restart it if not
+    [string]$SRSPath = "$MainPath\DCS-SimpleRadio-Standalone\Server\SRS-Server.exe",
+    [string]$SRSProcess = "SRS-Server",
 
     # Schrodinger's variables, if you look at them ED might change them
     # Generally recommended to leave these alone
@@ -280,6 +294,14 @@ while ($loop) {
             }
         }
 
+        if ($CheckSRS) {
+            $srs = Get-Process -Name $SRSProcess -ErrorAction SilentlyContinue
+            if (-not $srs) {
+                Write-Log "SRS is not running, starting SRS Server."
+                Start-Process -FilePath $SRSPath
+            }
+        }
+
         $nextRestart = if ($restartDCS) { Get-NextRestartTime } else { "Disabled" }
         $version = if ($Update) {Get-Content -Path "$MainPath\scripts\version.txt" -ErrorAction SilentlyContinue} else { "Unknown" }
         if ($RealtimeUpdate) {
@@ -290,20 +312,21 @@ while ($loop) {
                 Write-Host ""
                 Write-Host "        DCS Server Monitor by CourtesyFlushGH"
                 Write-Host ""
-                Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
-                Write-Host ""
                 Write-Host "              DCS Version: $version"
-                Write-Host "              Web Version: $webversion"
                 Write-Host ""
-                Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
-                Write-Host ""
-                Write-Host "          Next restart: $nextRestart"
-                Write-Host "          Last restart: $lastRestart"
-                Write-Host ""
+                if ($restartDCS) {
+                    Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
+                    Write-Host ""
+                    Write-Host "          Next restart: $nextRestart"
+                    Write-Host "          Last restart: $lastRestart"
+                    Write-Host ""
+                }
                 Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
                 Write-Host ""
                 Write-Host "                Auto update DCS: $Update"
-                Write-Host "           Dynamic campaign support: $DynamicCampaign"
+                if ($CheckSRS) {
+                    Write-Host "                   Check SRS: $CheckSRS"
+                }
                 Write-Host ""
                 Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
                 Write-Host ""
@@ -319,20 +342,21 @@ while ($loop) {
             Write-Host ""
             Write-Host "        DCS Server Monitor by CourtesyFlushGH"
             Write-Host ""
-            Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
-            Write-Host ""
             Write-Host "              DCS Version: $version"
-            Write-Host "              Web Version: $webversion"
             Write-Host ""
-            Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
-            Write-Host ""
-            Write-Host "          Next restart: $nextRestart"
-            Write-Host "          Last restart: $lastRestart"
-            Write-Host ""
+            if ($restartDCS) {
+                Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
+                Write-Host ""
+                Write-Host "          Next restart: $nextRestart"
+                Write-Host "          Last restart: $lastRestart"
+                Write-Host ""
+            }
             Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
             Write-Host ""
             Write-Host "                Auto update DCS: $Update"
-            Write-Host "           Dynamic campaign support: $DynamicCampaign"
+            if ($CheckSRS) {
+                Write-Host "                   Check SRS: $CheckSRS"
+            }
             Write-Host ""
             Write-Host "#####################################################"
 
