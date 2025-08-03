@@ -20,7 +20,8 @@ param(
     # Update options, will immediately update DCS if an update is detected
     [bool]$Update = $true,
 
-    # Process names, in case Eagle Dynamics changes them
+    # Schrodinger's variables, if you look at them ED might change them
+    # Generally recommended to leave these alone
     [string]$ServerProcess = "DCS_server",
     [string]$UpdaterProcess = "DCS_updater"
 )
@@ -75,41 +76,6 @@ function Start-DCS {
     }
 }
 
-function Test-DCS {
-    $dcs = Get-DCSProcess
-    if (-not $dcs) {
-        Write-Log "DCS Server is not running."
-        Start-DCS
-    }
-}
-
-$webversion = $null
-function Get-Version {
-    $DCSVersion = 'https://www.digitalcombatsimulator.com/en/news/changelog/release/.*'
-    
-
-    $scrape = (Invoke-WebRequest -Uri "https://updates.digitalcombatsimulator.com/" -UseBasicParsing).Links.Href | Get-Unique
-
-    $allmatches = ($scrape | Select-String $DCSVersion -AllMatches).Matches
-    ForEach-Object -InputObject $allmatches {
-        $webversion = ($_.Value | Select-String -Pattern '(\d+\.\d+\.\d+\.\d+)').Matches.Groups[1].Value
-    }
-    if (-not (Test-Path -Path "$MainPath\scripts\version.txt" -ErrorAction SilentlyContinue)) {
-        New-Item -Path "$MainPath\scripts\version.txt" -ItemType File -Force
-        Set-Content -Path "$MainPath\scripts\version.txt" -Value $webversion -Force
-    }
-    $current = Get-Content -Path "$MainPath\scripts\version.txt" -ErrorAction SilentlyContinue
-    if ($webversion -eq $current) {
-        return
-    } else {
-        Write-Log "DCS Version is outdated. Current: $current, Web: $webversion" -Level "WARNING"
-        Stop-DCS
-        Start-Sleep -Seconds 5
-        Start-DCS
-        Set-Content -Path "$MainPath\scripts\version.txt" -Value $webversion -Force
-        return
-    }
-}
 
 function Test-Time {
     try {
@@ -166,42 +132,94 @@ function Get-NextRestartTime {
 }
 
 $lastRestart = "Never"
+$webversion = $null
+$DCSVersion = 'https://www.digitalcombatsimulator.com/en/news/changelog/release/.*'
+
 $loop = $true
 while ($loop) {
-    $restarts = 0
-    if ($restartDCS) {
-        if ($restartWeekly) {
-            $day = Test-Day
-            $time = Test-Time
-            if ($day -and $time) {
-                Stop-DCS
-                Start-Sleep -Seconds 5
-                Start-DCS
-                $lastRestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-                $restarts++
-            }
-        } elseif ($restartDaily) {
-            if (Test-Time) {
-                Stop-DCS
-                Start-Sleep -Seconds 5
-                Start-DCS
-                $lastRestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-                $restarts++
+    try {
+        $restarts = 0
+        if ($restartDCS) {
+            if ($restartWeekly) {
+                $day = Test-Day
+                $time = Test-Time
+                if ($day -and $time) {
+                    Stop-DCS
+                    Start-Sleep -Seconds 5
+                    Start-DCS
+                    $lastRestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+                    $restarts++
+                }
+            } elseif ($restartDaily) {
+                if (Test-Time) {
+                    Stop-DCS
+                    Start-Sleep -Seconds 5
+                    Start-DCS
+                    $lastRestart = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+                    $restarts++
+                }
             }
         }
-    }
 
-    if ($Update -and $restarts -eq 0) {
-        Get-Version
-    }
+        $scrape = (Invoke-WebRequest -Uri "https://updates.digitalcombatsimulator.com/" -UseBasicParsing).Links.Href | Get-Unique
+        $allmatches = ($scrape | Select-String $DCSVersion -AllMatches).Matches
+        ForEach-Object -InputObject $allmatches {
+            $webversion = ($_.Value | Select-String -Pattern '(\d+\.\d+\.\d+\.\d+)').Matches.Groups[1].Value
+        }
 
-    Test-DCS
+        if (-not (Test-Path -Path "$MainPath\scripts\version.txt" -ErrorAction SilentlyContinue)) {
+            New-Item -Path "$MainPath\scripts\version.txt" -ItemType File -Force
+            Set-Content -Path "$MainPath\scripts\version.txt" -Value $webversion -Force
+        }
 
-    $nextRestart = if ($restartDCS) { Get-NextRestartTime } else { "Disabled" }
-    $version = Get-Content -Path "$MainPath\scripts\version.txt" -ErrorAction SilentlyContinue
-    if ($RealtimeUpdate) {
-        $seconds = $CheckInterval
-        while ($seconds -gt 0) {
+        if ($Update -and $restarts -eq 0) {
+            
+            $current = Get-Content -Path "$MainPath\scripts\version.txt" -ErrorAction SilentlyContinue
+            if (-not ($webversion -eq $current)) {
+                Write-Log "DCS Version is outdated. Current: $current, Web: $webversion" -Level "WARNING"
+                Stop-DCS
+                Start-Sleep -Seconds 5
+                Start-DCS
+                Set-Content -Path "$MainPath\scripts\version.txt" -Value $webversion -Force
+            }
+        }
+
+        $dcs = Get-DCSProcess
+        if (-not $dcs) {
+            Write-Log "DCS Server is not running."
+            Start-DCS
+        }
+
+        $nextRestart = if ($restartDCS) { Get-NextRestartTime } else { "Disabled" }
+        $version = if ($Update) {Get-Content -Path "$MainPath\scripts\version.txt" -ErrorAction SilentlyContinue} else { "Unknown" }
+        if ($RealtimeUpdate) {
+            $seconds = $CheckInterval
+            while ($seconds -gt 0) {
+                Clear-Host
+                Write-Host "#####################################################"
+                Write-Host ""
+                Write-Host "        DCS Server Monitor by CourtesyFlushGH"
+                Write-Host ""
+                Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
+                Write-Host ""
+                Write-Host "              DCS Version: $version"
+                Write-Host "              Web Version: $webversion"
+                Write-Host "                  Update set to $Update"
+                Write-Host ""
+                Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
+                Write-Host ""
+                Write-Host "          Next restart: $nextRestart"
+                Write-Host "          Last restart: $lastRestart"
+                Write-Host ""
+                Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
+                Write-Host ""
+                Write-Host "              Next check in $seconds seconds"
+                Write-Host ""
+                Write-Host "#####################################################"
+                Start-Sleep -Seconds 1
+                $seconds--
+            }
+        } else {
             Clear-Host
             Write-Host "#####################################################"
             Write-Host ""
@@ -210,6 +228,7 @@ while ($loop) {
             Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
             Write-Host ""
             Write-Host "              DCS Version: $version"
+            Write-Host "              Web Version: $webversion"
             Write-Host "                  Update set to $Update"
             Write-Host ""
             Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
@@ -217,33 +236,11 @@ while ($loop) {
             Write-Host "          Next restart: $nextRestart"
             Write-Host "          Last restart: $lastRestart"
             Write-Host ""
-            Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
-            Write-Host ""
-            Write-Host "              Next check in $seconds seconds"
-            Write-Host ""
             Write-Host "#####################################################"
-            Start-Sleep -Seconds 1
-            $seconds--
-        }
-    } else {
-        Clear-Host
-        Write-Host "#####################################################"
-        Write-Host ""
-        Write-Host "        DCS Server Monitor by CourtesyFlushGH"
-        Write-Host ""
-        Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
-        Write-Host ""
-        Write-Host "              DCS Version: $version"
-        Write-Host "                  Update set to $Update"
-        Write-Host ""
-        Write-Host "# # # # # # # # # # # # # # # # # # # # # # # # # # #"
-        Write-Host ""
-        Write-Host "          Next restart: $nextRestart"
-        Write-Host "          Last restart: $lastRestart"
-        Write-Host ""
-        Write-Host "#####################################################"
 
-        Start-Sleep -Seconds $CheckInterval
+            Start-Sleep -Seconds $CheckInterval
+        }
+    } catch {
+        Write-Log "An error occurred: $_" -Level "ERROR"
     }
-    
 }
