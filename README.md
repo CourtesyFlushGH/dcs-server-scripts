@@ -6,7 +6,7 @@ PowerShell scripts I use for my DCS World server.
 
 Download and either start with Task Scheduler or right-click and Run With Powershell (might need to be run with Admin).
 
-Before running, edit the script parameters to your preference and make sure your server is up to date.
+Before running, edit the script parameters to your preference and system.
 
 This script will do the following every X amount of seconds (depending on parameters):
 - check if the server needs to be restarted according to the restart time / day
