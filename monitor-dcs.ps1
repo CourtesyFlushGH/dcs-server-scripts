@@ -10,32 +10,31 @@
 
 param(
     # Paths to DCS Server and its components
-    [string]$MainPath = "C:\DCS World",
-    [string]$DCSPath = "$MainPath\DCS World Server",
-    [string]$UpdaterPath = "$DCSPath\bin\DCS_updater.exe",
-    [string]$LogPath = "$MainPath\Logs\monitor-dcs.log",
+    [string]$DCSPath = "C:\DCS World\DCS World Server", # Change this to your DCS Server main folder path
+    [string]$UpdaterPath = "$DCSPath\bin\DCS_updater.exe", # You probably don't need to change this
+    [string]$LogPath = "C:\DCS World\Logs\monitor-dcs.log", # Change this to your desired log file path
 
     # How often to check the server
     [int]$CheckInterval = 60, # Seconds
     [bool]$RealtimeUpdate = $false, # If true, gives a countdown for server checks in the console
 
     # Restart options
-    [bool]$restartDCS = $true,
+    [bool]$restartDCS = $true, # If true, will restart DCS Server if the restart conditions are met
     [bool]$restartDaily = $true, # Only $restartDaily or $restartWeekly can be true, not both
     [bool]$restartWeekly = $false,
     [string]$restartDay = "Monday", # Only applicable if $restartWeekly is true
-    [string]$restartTime = "02:00", # HH:mm format
+    [string]$restartTime = "02:00", # HH:mm format, local(machine) time
 
     # Dynamic campaign support
-    [bool]$DynamicCampaign = $true, # If true, will edit missionscripting.lua to enable dynamic campaigns
+    [bool]$DynamicCampaign = $true, # If true, will edit the MissionScripting.lua to enable dynamic campaigns
 
     # Update options, will immediately update DCS if an update is detected
     [bool]$Update = $true,
 
     # SRS options
     [bool]$CheckSRS = $true, # If true, will check if SRS is running and restart it if not
-    [string]$SRSPath = "$MainPath\DCS-SimpleRadio-Standalone\Server\SRS-Server.exe",
-    [string]$SRSProcess = "SRS-Server",
+    [string]$SRSPath = "C:\DCS World\DCS-SimpleRadio-Standalone\Server\SRS-Server.exe", # Change this to your SRS Server executable path
+    [string]$SRSProcess = "SRS-Server", # Process name for SRS Server, you probably don't need to change this
 
     # Schrodinger's variables, if you look at them ED might change them
     # Generally recommended to leave these alone
