@@ -259,6 +259,24 @@ try {
         }
     }
 
+    # Security cleanup
+    if ($exclusion -eq "Y" -or $exclusion -eq "y") {
+        Write-Log "Moving Windows Defender exclusions to $ServerPath\bin for better security."
+        $secExcluded = Get-MpPreference | Select-Object -ExpandProperty ExclusionPath | Where-Object { $_ -eq "$ServerPath\bin" }
+        if (-not $secExcluded) {
+            Write-Log "Adding $ServerPath\bin to Windows Defender exclusions."
+            Add-MpPreference -ExclusionPath "$ServerPath\bin" -ErrorAction Stop
+        } else {
+            Write-Log "$ServerPath\bin is already in Windows Defender exclusions."
+        }
+
+        $excluded = Get-MpPreference | Select-Object -ExpandProperty ExclusionPath | Where-Object { $_ -eq $MainPath }
+        if ($excluded) {
+            Write-Log "Removing $MainPath from Windows Defender exclusions."
+            Remove-MpPreference -ExclusionPath $MainPath -ErrorAction Stop
+        }
+    }
+
     # Clean up
     Write-Log "Cleaning up..."
     Remove-Item -Path $InstallerPath -Force -ErrorAction SilentlyContinue
