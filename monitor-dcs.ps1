@@ -75,30 +75,30 @@ end
 ###############################################################
 
 # Default MissionScripting.lua for reference
-$MissionScriptVanilla = @"
---Initialization script for the Mission lua Environment (SSE)
+# $MissionScriptVanilla = @"
+# --Initialization script for the Mission lua Environment (SSE)
 
-dofile('Scripts/ScriptingSystem.lua')
+# dofile('Scripts/ScriptingSystem.lua')
 
---Sanitize Mission Scripting environment
---This makes unavailable some unsecure functions. 
---Mission downloaded from server to client may contain potentialy harmful lua code that may use these functions.
---You can remove the code below and make availble these functions at your own risk.
+# --Sanitize Mission Scripting environment
+# --This makes unavailable some unsecure functions. 
+# --Mission downloaded from server to client may contain potentialy harmful lua code that may use these functions.
+# --You can remove the code below and make availble these functions at your own risk.
 
-local function sanitizeModule(name)
-	_G[name] = nil
-	package.loaded[name] = nil
-end
+# local function sanitizeModule(name)
+# 	_G[name] = nil
+# 	package.loaded[name] = nil
+# end
 
-do
-	sanitizeModule('os')
-	sanitizeModule('io')
-	sanitizeModule('lfs')
-	_G['require'] = nil
-	_G['loadlib'] = nil
-	_G['package'] = nil
-end
-"@
+# do
+# 	sanitizeModule('os')
+# 	sanitizeModule('io')
+# 	sanitizeModule('lfs')
+# 	_G['require'] = nil
+# 	_G['loadlib'] = nil
+# 	_G['package'] = nil
+# end
+# "@
 
 # Log function
 function Write-Log {
@@ -238,8 +238,6 @@ function Restart-DCS {
 
 # Initialize variables
 $lastRestart = "Never"
-$webversion = $null
-$DCSVersion = 'https://www.digitalcombatsimulator.com/en/news/changelog/release/.*'
 
 # Main loop
 $loop = $true
@@ -264,24 +262,13 @@ while ($loop) {
             }
         }
 
-        $scrape = (Invoke-WebRequest -Uri "https://updates.digitalcombatsimulator.com/" -UseBasicParsing).Links.Href | Get-Unique
-        $allmatches = ($scrape | Select-String $DCSVersion -AllMatches).Matches
-        ForEach-Object -InputObject $allmatches {
-            $webversion = ($_.Value | Select-String -Pattern '(\d+\.\d+\.\d+\.\d+)').Matches.Groups[1].Value
-        }
-
-        if (-not (Test-Path -Path "$MainPath\scripts\version.txt" -ErrorAction SilentlyContinue)) {
-            New-Item -Path "$MainPath\scripts\version.txt" -ItemType File -Force
-            Set-Content -Path "$MainPath\scripts\version.txt" -Value $webversion -Force
-        }
-
+        $version = @(Get-Content -Path "$DCSPath\autoupdate.cfg" | Select-String -Pattern '(\d+\.\d+\.\d+\.\d+)' -AllMatches).Matches[0].Groups[1].Value
+        
         if ($Update -and $restarts -eq 0) {
-            
-            $current = Get-Content -Path "$MainPath\scripts\version.txt" -ErrorAction SilentlyContinue
-            if (-not ($webversion -eq $current)) {
-                Write-Log "DCS Version is outdated. Current: $current, Web: $webversion" -Level "WARNING"
+            $webversion = @((Invoke-WebRequest -Uri "https://updates.digitalcombatsimulator.com/" -UseBasicParsing).Links.Href | Select-String -Pattern '(\d+\.\d+\.\d+\.\d+)' -AllMatches).Matches[0].Groups[1].Value
+            if (-not ($webversion -eq $version)) {
+                Write-Log "DCS Version is outdated. Current: $version, Web: $webversion" -Level "WARNING"
                 Restart-DCS
-                Set-Content -Path "$MainPath\scripts\version.txt" -Value $webversion -Force
             }
         }
 
