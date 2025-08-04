@@ -243,7 +243,10 @@ $lastRestart = "Never"
 $loop = $true
 while ($loop) {
     try {
+        # Instantiate restarts variable to avoid issues with multiple restarts in the same loop
         $restarts = 0
+
+        # Check if we need to restart DCS
         if ($restartDCS) {
             if ($restartWeekly) {
                 $day = Test-Day
@@ -262,8 +265,10 @@ while ($loop) {
             }
         }
 
+        # Pull current DCS version from autoupdate.cfg
         $version = @(Get-Content -Path "$DCSPath\autoupdate.cfg" | Select-String -Pattern '(\d+\.\d+\.\d+\.\d+)' -AllMatches).Matches[0].Groups[1].Value
         
+        # Check for updates
         if ($Update -and $restarts -eq 0) {
             $webversion = @((Invoke-WebRequest -Uri "https://updates.digitalcombatsimulator.com/" -UseBasicParsing).Links.Href | Select-String -Pattern '(\d+\.\d+\.\d+\.\d+)' -AllMatches).Matches[0].Groups[1].Value
             if (-not ($webversion -eq $version)) {
@@ -272,6 +277,7 @@ while ($loop) {
             }
         }
 
+        # Main DCS process check
         $dcs = Get-DCSProcess
         if (-not $dcs) {
             Write-Log "DCS Server is not running."
@@ -281,6 +287,7 @@ while ($loop) {
             }
         }
 
+        # If CheckSRS is true, check if SRS is running
         if ($CheckSRS) {
             $srs = Get-Process -Name $SRSProcess -ErrorAction SilentlyContinue
             if (-not $srs) {
@@ -289,8 +296,10 @@ while ($loop) {
             }
         }
 
-        $nextRestart = if ($restartDCS) { Get-NextRestartTime } else { "Disabled" }
-        $version = if ($Update) {Get-Content -Path "$MainPath\scripts\version.txt" -ErrorAction SilentlyContinue} else { "Unknown" }
+        # Terminal output stuff
+        if ($restartDCS) {
+            $nextRestart = Get-NextRestartTime
+        }
         if ($RealtimeUpdate) {
             $seconds = $CheckInterval
             while ($seconds -gt 0) {
