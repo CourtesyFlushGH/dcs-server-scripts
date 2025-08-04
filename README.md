@@ -2,17 +2,19 @@
 
 PowerShell scripts I use for my DCS World server.
 
-## Monitor DCS script
+## Monitor DCS script V1.0
 
 Download and either start with Task Scheduler or right-click and Run With Powershell (might need to be run with Admin).
 
 Before running, edit the script parameters to your preference and system.
 
-This script will do the following every X amount of seconds (depending on parameters):
-- check if the server needs to be restarted according to the restart time / day
-- check if there's been a version update by parsing https://updates.digitalcombatsimulator.com/
-- check if the processes DCS_server or DCS_updater are running
-- start / restart the server as needed
+Script does the following:
+- process check to ensure server is running
+- (optional) server restarting according to specific time and/or day of the week
+- (optional) automatic updating when a new version is released
+- (optional) MissionScripting.lua modification for dynamic campaign support
+- (optional) SRS server process check
+
 
 ## Install DCS script (WIP)
 
